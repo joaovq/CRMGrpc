@@ -1,0 +1,17 @@
+spring:
+  grpc:
+    server:
+      enable: true
+      port: 9092
+      reflection:
+        enabled: true
+  application:
+    name: crm-grpc
+  datasource:
+    url: jdbc:h2:file:./crm_db;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    driverClassName: org.h2.Driver
+  h2:
+    console:
+      enabled: true
