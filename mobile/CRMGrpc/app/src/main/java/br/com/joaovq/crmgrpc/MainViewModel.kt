@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import br.com.joaovq.crmgrpc.data.client.PersonClient
 import br.com.joaovq.crmgrpc.data.model.Person
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,7 +14,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class MainViewModel(private val client: PersonClient) : ViewModel() {
+class MainViewModel(
+    private val client: PersonClient,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+) : ViewModel() {
 
     private val _persons = MutableStateFlow<List<Person>>(emptyList())
     private val _isLoading = MutableStateFlow(false)
@@ -31,7 +35,7 @@ class MainViewModel(private val client: PersonClient) : ViewModel() {
             try {
                 _isLoading.update { true }
                 _persons.update {
-                    withContext(Dispatchers.IO) {
+                    withContext(ioDispatcher) {
                         client.getPersons().personsList.map { person ->
                             Person(id = person.id, name = person.name)
                         }
@@ -50,7 +54,7 @@ class MainViewModel(private val client: PersonClient) : ViewModel() {
             try {
                 _isLoading.update { true }
                 _persons.update {
-                    val people = withContext(Dispatchers.IO) {
+                    val people = withContext(ioDispatcher) {
                         val createPerson = client.createPerson(name)
                         Person(id = createPerson.id, name = createPerson.name)
                     }
@@ -64,16 +68,17 @@ class MainViewModel(private val client: PersonClient) : ViewModel() {
             }
         }
     }
+
     fun deletePersonById(id: Int) {
         viewModelScope.launch {
             try {
                 _persons.update {
-                     withContext(Dispatchers.IO) {
+                    withContext(ioDispatcher) {
                         val createPerson = client.deletePersonById(id)
                         Person(id = createPerson.id, name = createPerson.name)
-                         val persons = it.toMutableList()
-                         persons.remove(persons.find { it.id == id })
-                         persons
+                        val persons = it.toMutableList()
+                        persons.remove(persons.find { person -> person.id == id })
+                        persons
                     }
                 }
             } catch (e: Exception) {
